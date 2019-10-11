@@ -29,16 +29,44 @@ namespace CrudCore.Controllers
 
         // GET: api/Personajes/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TbPersonajes>> GetTbPersonajes(int id)
+        public async Task<ActionResult<TbPersonajes>> GetTbPersonajes(String id)
         {
-            var tbPersonajes = await _context.TbPersonajes.FindAsync(id);
-
-            if (tbPersonajes == null)
+            int n = 0;
+            bool b = int.TryParse(id, out n);
+            if (b)
             {
-                return NotFound();
-            }
+                var tbPersonajes = await _context.TbPersonajes.FindAsync(n);
 
-            return tbPersonajes;
+                if (tbPersonajes == null)
+                {
+                    return NotFound();
+                }
+
+                return tbPersonajes;
+            }
+            else
+            {
+                TbPersonajes tbPersonajes = new TbPersonajes();
+                var dolo = from p in _context.TbPersonajes
+                                   where p.NombrePersonaje.Contains(id) select p;
+
+                if (tbPersonajes == null)
+                {
+                    return NotFound();
+                }
+
+                foreach (var item in dolo)
+                {
+                    tbPersonajes.NombrePersonaje = item.NombrePersonaje;
+                    tbPersonajes.FechaPersonaje = item.FechaPersonaje;
+                    tbPersonajes.EditorialPersonaje = item.EditorialPersonaje;
+                    tbPersonajes.EdadPersonaje = item.EdadPersonaje;
+                    tbPersonajes.IdPersonaje = item.IdPersonaje;
+                }
+
+                return tbPersonajes;
+            }
+            
         }
 
         // PUT: api/Personajes/5
@@ -47,7 +75,8 @@ namespace CrudCore.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTbPersonajes(int id, TbPersonajes tbPersonajes)
         {
-            if (id != tbPersonajes.IdPersonaje)
+            Validaciones.Validar validar = new Validaciones.Validar();
+            if (id != tbPersonajes.IdPersonaje && validar.comprobar(tbPersonajes))
             {
                 return BadRequest();
             }
@@ -79,10 +108,19 @@ namespace CrudCore.Controllers
         [HttpPost]
         public async Task<ActionResult<TbPersonajes>> PostTbPersonajes(TbPersonajes tbPersonajes)
         {
+            Validaciones.Validar validar = new Validaciones.Validar();
             _context.TbPersonajes.Add(tbPersonajes);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTbPersonajes", new { id = tbPersonajes.IdPersonaje }, tbPersonajes);
+            if (validar.comprobar(tbPersonajes))
+            {
+                return CreatedAtAction("GetTbPersonajes", new { id = tbPersonajes.IdPersonaje }, tbPersonajes);
+            }
+            else
+            {
+                return BadRequest();
+            }
+            
         }
 
         // DELETE: api/Personajes/5
